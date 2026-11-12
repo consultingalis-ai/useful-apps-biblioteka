@@ -4,14 +4,19 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { pokreniMigracije } from "./baza/migracije";
 import { Skladiste } from "./baza/skladiste";
 import { pripremiZaPretragu, type Filter, type UnosZaPretragu } from "./logika/pretraga";
+import { procitajUvoz } from "./logika/izvoz";
 import { naslovKopije } from "./logika/sabloni";
+import { opisPlana, planirajUvoz, type PlanUvoza } from "./logika/uvoz";
 import type { Projekat, Unos } from "./logika/tipovi";
 import {
   infoPodataka,
+  izaberiJsonZaUvoz,
   kopirajUClipboard,
   napraviBackup,
   otvoriBazu,
+  procitajFajl,
   tekstGreske,
+  vratiBackupIRestartuj,
   zabelezi,
   zabeleziGresku,
   type InfoPodataka,
@@ -33,6 +38,7 @@ export default function App() {
   const [obavestenje, setObavestenje] = useState<string | null>(null);
   const [greska, setGreska] = useState<string | null>(null);
   const [potvrdaZatvaranja, setPotvrdaZatvaranja] = useState(false);
+  const [planUvoza, setPlanUvoza] = useState<PlanUvoza | null>(null);
   const izmenjenoRef = useRef(false);
   const tajmer = useRef<number | undefined>(undefined);
 
@@ -173,6 +179,50 @@ export default function App() {
     }
   }, [skladiste, osvezi, obavesti, prijaviGresku]);
 
+  // Uvoz, korak 1: izbor fajla, provera i pregled. Ovde se još ništa ne upisuje u bazu.
+  const pocniUvoz = useCallback(async () => {
+    if (!skladiste) return;
+    try {
+      const putanja = await izaberiJsonZaUvoz();
+      if (!putanja) return; // korisnik je odustao
+      const procitano = procitajUvoz(await procitajFajl(putanja));
+      if (!procitano.ok) {
+        setGreska(`Uvoz nije moguć, ništa nije promenjeno. ${procitano.poruka}`);
+        zabeleziGresku(`Uvoz odbijen: ${procitano.poruka}`);
+        return;
+      }
+      setPlanUvoza(planirajUvoz(await skladiste.ucitajSve(), procitano.podaci));
+    } catch (e) {
+      prijaviGresku("čitanje fajla za uvoz", e);
+    }
+  }, [skladiste, prijaviGresku]);
+
+  // Uvoz, korak 2 (posle potvrde): backup → upis. Ako upis pukne na pola,
+  // aplikacija vraća bazu iz tog backup-a, pa je uvoz „sve ili ništa”.
+  const potvrdiUvoz = useCallback(async () => {
+    if (!skladiste || !planUvoza) return;
+    const plan = planUvoza;
+    setPlanUvoza(null);
+    let backup: string | null = null;
+    try {
+      backup = await napraviBackup(skladiste.baza, "pre-uvoza");
+      await skladiste.primeniUvoz(plan);
+      await osvezi(skladiste);
+      obavesti(`Uvezeno: ${plan.dodaje.length} novih, ${plan.menja.length} izmenjenih`);
+      zabelezi(`Uvoz: ${opisPlana(plan)}`);
+    } catch (e) {
+      prijaviGresku("uvoz", e);
+      if (backup) {
+        zabeleziGresku(`Uvoz prekinut, vraćam bazu iz ${backup}`);
+        try {
+          await vratiBackupIRestartuj(backup);
+        } catch (e2) {
+          prijaviGresku(`vraćanje iz backup-a ${backup}`, e2);
+        }
+      }
+    }
+  }, [skladiste, planUvoza, osvezi, obavesti, prijaviGresku]);
+
   const nazad = useCallback(() => setEkran({ vrsta: "glavni" }), []);
   const novi = useCallback(() => setEkran({ vrsta: "editor", unos: null, kljuc: Date.now() }), []);
   const izmeni = useCallback((u: Unos) => setEkran({ vrsta: "editor", unos: u, kljuc: Date.now() }), []);
@@ -204,6 +254,7 @@ export default function App() {
           filter={filter}
           onFilter={setFilter}
           onNovi={novi}
+          onUvoz={pocniUvoz}
           onIzmeni={izmeni}
           onKopiraj={kopiraj}
           onOmiljen={promeniOmiljen}
@@ -223,6 +274,16 @@ export default function App() {
       )}
 
       {obavestenje && <div className="obavestenje" role="status">{obavestenje}</div>}
+
+      {planUvoza && (
+        <Potvrda
+          naslov="Uvoz iz JSON fajla"
+          poruka={`${opisPlana(planUvoza)} Pre uvoza aplikacija sama pravi backup.`}
+          potvrdi="Uvezi"
+          onPotvrdi={() => { void potvrdiUvoz(); }}
+          onOtkazi={() => setPlanUvoza(null)}
+        />
+      )}
 
       {potvrdaZatvaranja && (
         <Potvrda

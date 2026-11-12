@@ -32,6 +32,11 @@ const noviId = () => crypto.randomUUID();
 export class Skladiste {
   constructor(private readonly db: SqlKlijent) {}
 
+  /** Baza ispod skladišta (treba za backup pre uvoza). */
+  get baza(): SqlKlijent {
+    return this.db;
+  }
+
   // ---------- Čitanje ----------
 
   async ucitajProjekte(): Promise<Projekat[]> {

@@ -11,6 +11,7 @@ interface Props {
   filter: Filter;
   onFilter: (f: Filter) => void;
   onNovi: () => void;
+  onUvoz: () => void;
   onIzmeni: (u: Unos) => void;
   onKopiraj: (u: Unos) => void;
   onOmiljen: (u: Unos) => void;
@@ -23,7 +24,7 @@ const NAZIVI_GRUPA: Record<Tip | "svi", string> = {
   nastavak: "Nastavci",
 };
 
-export function GlavniEkran({ unosi, projekti, filter, onFilter, onNovi, onIzmeni, onKopiraj, onOmiljen }: Props) {
+export function GlavniEkran({ unosi, projekti, filter, onFilter, onNovi, onUvoz, onIzmeni, onKopiraj, onOmiljen }: Props) {
   const pretraga = useRef<HTMLInputElement>(null);
   const [izabran, setIzabran] = useState(0);
 
@@ -142,6 +143,7 @@ export function GlavniEkran({ unosi, projekti, filter, onFilter, onNovi, onIzmen
             onChange={(e) => onFilter({ ...filter, upit: e.target.value })}
             autoFocus
           />
+          <button type="button" onClick={onUvoz} title="Uvoz unosa iz JSON fajla">Uvezi JSON</button>
           <button type="button" className="glavno" onClick={onNovi} title="Ctrl+N">+ Novi</button>
         </div>
 
@@ -149,6 +151,7 @@ export function GlavniEkran({ unosi, projekti, filter, onFilter, onNovi, onIzmen
           <div className="prazno">
             <p>Još nema unosa.</p>
             <p>Klikni <strong>+ Novi</strong> (ili Ctrl+N) da dodaš prvi prompt, instrukcije ili nastavak.</p>
+            <p>Imaš izvoz ili početni fajl? Klikni <strong>Uvezi JSON</strong>.</p>
           </div>
         ) : prikaz.length === 0 ? (
           <div className="prazno">

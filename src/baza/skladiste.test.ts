@@ -187,6 +187,38 @@ describe("izvoz → uvoz", () => {
     expect(plan.dodaje).toHaveLength(1);
   });
 
+  it("početni uvoz: postojeći projekti ostaju isti, nov projekat se dodaje, ponovni uvoz ne duplira", async () => {
+    const { s } = await novaBaza();
+    const projekti = await s.ucitajProjekte();
+    const opsforma = projekti.find((p) => p.naziv === "opsforma")!;
+    const nov = { id: "novi-projekat", naziv: "Claude Code & Claude Cowork Masterclass", boja: "#B5651D", arhiviran: false, kreiran: 1 };
+    const fajl = JSON.stringify({
+      schemaVersion: 1,
+      aplikacija: "biblioteka-promptova",
+      izvezeno: 1,
+      projekti: [opsforma, nov],
+      unosi: [
+        { ...napraviUnos(), id: "u1", projekatId: opsforma.id, oznake: ["iz-chata"] },
+        { ...napraviUnos(), id: "u2", projekatId: nov.id, tip: "instrukcije" },
+        { ...napraviUnos(), id: "u3", projekatId: null, tip: "nastavak" },
+      ],
+    });
+    const procitano = procitajUvoz(fajl);
+    if (!procitano.ok) throw new Error(procitano.poruka);
+    const plan = planirajUvoz(await s.ucitajSve(), procitano.podaci);
+    expect(plan.izmenjeniProjekti).toHaveLength(0); // boje početnih projekata se ne menjaju
+    expect(plan.noviProjekti.map((p) => p.naziv)).toEqual([nov.naziv]);
+    expect(plan.dodaje).toHaveLength(3);
+    await s.primeniUvoz(plan);
+    expect(await s.ucitajProjekte()).toHaveLength(10);
+    expect(await s.ucitajUnose()).toHaveLength(3);
+    // Isti fajl drugi put: ništa novo
+    const ponovo = planirajUvoz(await s.ucitajSve(), procitano.podaci);
+    expect(ponovo.dodaje).toHaveLength(0);
+    expect(ponovo.menja).toHaveLength(0);
+    expect(ponovo.nepromenjeno).toBe(3);
+  });
+
   it("oštećen uvozni fajl ne menja ništa u bazi", async () => {
     const { s } = await novaBaza();
     await s.sacuvajUnos(napraviUnos());
