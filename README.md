@@ -17,6 +17,9 @@ Desktop aplikacija za Windows u kojoj čuvam tekstove koje stalno koristim u Cla
 2. Pokreni ga. Windows može da prikaže plavi prozor „Windows protected your PC” (SmartScreen), jer aplikacija nije potpisana. Klikni **More info → Run anyway**.
 3. Aplikacija se instalira samo za tvog korisnika i pojavi se u Start meniju kao „Biblioteka promptova”.
 
+## Automatsko ažuriranje
+Pri svakom pokretanju aplikacija proveri da li na GitHub Release-u postoji novija verzija. Ako postoji, sama je preuzme, instalira i ponovo se pokrene (traje nekoliko sekundi, pre nego što počneš da kucaš, pa se ništa ne gubi). Bez interneta aplikacija radi normalno i proverava sledeći put. Nove verzije su potpisane, pa aplikacija prihvata samo installer napravljen u ovom repou.
+
 ## Gde su podaci
 Svi podaci su lokalno, u folderu:
 

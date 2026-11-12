@@ -43,9 +43,15 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Potpis za automatsko ažuriranje (bez ovoga release ne prolazi).
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Biblioteka promptova ${{ github.ref_name }}
           releaseBody: ${{ steps.beleska.outputs.beleska }}
           releaseDraft: false
           prerelease: false
+          # latest.json na Release-u: odavde aplikacija saznaje da postoji nova verzija.
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true

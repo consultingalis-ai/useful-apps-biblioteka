@@ -21,6 +21,7 @@ import {
   zabeleziGresku,
   type InfoPodataka,
 } from "./servisi/tauri";
+import { proveriIAzuriraj, type StanjeAzuriranja } from "./servisi/azuriranje";
 import { Editor } from "./ui/Editor";
 import { GlavniEkran } from "./ui/GlavniEkran";
 import { Potvrda } from "./ui/Potvrda";
@@ -39,6 +40,7 @@ export default function App() {
   const [greska, setGreska] = useState<string | null>(null);
   const [potvrdaZatvaranja, setPotvrdaZatvaranja] = useState(false);
   const [planUvoza, setPlanUvoza] = useState<PlanUvoza | null>(null);
+  const [azuriranje, setAzuriranje] = useState<StanjeAzuriranja>({ faza: "nema" });
   const izmenjenoRef = useRef(false);
   const tajmer = useRef<number | undefined>(undefined);
 
@@ -65,6 +67,8 @@ export default function App() {
   // Pokretanje: folder podataka → baza → migracije (uz backup) → učitavanje.
   useEffect(() => {
     (async () => {
+      // Prvo provera nove verzije; ako je ima, aplikacija se ažurira i restartuje.
+      await proveriIAzuriraj(setAzuriranje);
       try {
         const i = await infoPodataka();
         setInfo(i);
@@ -236,10 +240,24 @@ export default function App() {
       </div>
     );
   }
+  if (azuriranje.faza === "preuzimanje") {
+    return (
+      <div className="ucitavanje">
+        <h2>Ažuriram na verziju {azuriranje.verzija}…</h2>
+        <p>{azuriranje.procenat === null ? "Preuzimam" : `Preuzeto ${azuriranje.procenat}%`}. Aplikacija će se sama ponovo pokrenuti.</p>
+      </div>
+    );
+  }
   if (!skladiste) return <div className="ucitavanje">Učitavam…</div>;
 
   return (
     <div className="aplikacija">
+      {azuriranje.faza === "greska" && !greska && (
+        <div className="traka-greske" role="alert">
+          <span>{azuriranje.poruka}</span>
+          <button type="button" onClick={() => setAzuriranje({ faza: "nema" })} aria-label="Zatvori poruku">×</button>
+        </div>
+      )}
       {greska && (
         <div className="traka-greske" role="alert">
           <span>{greska}</span>

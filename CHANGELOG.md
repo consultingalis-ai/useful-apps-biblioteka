@@ -10,3 +10,4 @@ Format: [verzija] – datum (dd.mm.gggg).
 - Logika izvoza/uvoza (JSON sa `schemaVersion`, CSV sa BOM-om) i testovi.
 - CI na svaki PR (windows-latest) sa installerom kao artifact.
 - Dugme „Uvezi JSON”: provera fajla, pregled („dodaće se X, izmeniti Y”), potvrda, automatski backup pre uvoza; ako upis pukne na pola, baza se vraća iz tog backup-a.
+- Automatsko ažuriranje pri pokretanju (potpisane verzije sa GitHub Release-a).

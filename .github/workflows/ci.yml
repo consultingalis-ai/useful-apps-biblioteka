@@ -44,8 +44,21 @@ jobs:
         working-directory: src-tauri
         run: cargo test
 
+      # Ključ za potpis ažuriranja je GitHub secret. Ako ga nema (npr. PR iz forka),
+      # installer se ipak gradi, samo bez fajlova za automatsko ažuriranje.
       - name: Tauri build (NSIS installer)
-        run: npx tauri build
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ($env:TAURI_SIGNING_PRIVATE_KEY) {
+            npx tauri build
+          } else {
+            Write-Host "Nema ključa za potpis: gradim bez fajlova za ažuriranje."
+            '{"bundle":{"createUpdaterArtifacts":false}}' | Out-File -Encoding utf8NoBOM bez-azuriranja.json
+            npx tauri build --config bez-azuriranja.json
+          }
 
       - name: Installer kao artifact
         uses: actions/upload-artifact@v7

@@ -100,6 +100,10 @@ pub fn run() {
                 let _ = prozor.set_focus();
             }
         }));
+        // Automatsko ažuriranje: provera i instalacija nove verzije sa GitHub Release-a.
+        builder = builder
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_process::init());
     }
 
     builder
