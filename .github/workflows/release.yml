@@ -49,12 +49,23 @@ jobs:
           $deo >> $env:GITHUB_OUTPUT
           "KRAJ" >> $env:GITHUB_OUTPUT
 
+      # Ključ za potpis bez razmaka i praznih redova (lako se nalepe u GitHub secrets).
+      - name: Priprema ključa za potpis
+        shell: pwsh
+        env:
+          KLJUC: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          LOZINKA: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if (-not $env:KLJUC) { Write-Error "Nedostaje secret TAURI_SIGNING_PRIVATE_KEY"; exit 1 }
+          $k = $env:KLJUC.Trim(); $l = "$env:LOZINKA".Trim()
+          Write-Host "::add-mask::$k"
+          if ($l) { Write-Host "::add-mask::$l" }
+          "TAURI_SIGNING_PRIVATE_KEY=$k" >> $env:GITHUB_ENV
+          "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$l" >> $env:GITHUB_ENV
+
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Potpis za automatsko ažuriranje (bez ovoga release ne prolazi).
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ env.VERZIJA }}
           releaseName: Biblioteka promptova ${{ env.VERZIJA }}
