@@ -4,6 +4,15 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Ručno pokretanje (Actions → Release → Run workflow), jer guranje taga iz Claude sesije ne prolazi.
+  workflow_dispatch:
+    inputs:
+      verzija:
+        description: "Verzija za izdavanje, npr. v0.1.0"
+        required: true
+
+env:
+  VERZIJA: ${{ github.event.inputs.verzija || github.ref_name }}
 
 permissions:
   contents: write
@@ -31,7 +40,7 @@ jobs:
         id: beleska
         shell: pwsh
         run: |
-          $verzija = "${{ github.ref_name }}".TrimStart("v")
+          $verzija = "$env:VERZIJA".TrimStart("v")
           $tekst = Get-Content CHANGELOG.md -Raw -Encoding utf8
           $deo = [regex]::Match($tekst, "(?s)## \[$([regex]::Escape($verzija))\].*?(?=\n## \[|\z)").Value
           if (-not $deo) { $deo = "Pogledaj CHANGELOG.md" }
@@ -47,8 +56,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Biblioteka promptova ${{ github.ref_name }}
+          tagName: ${{ env.VERZIJA }}
+          releaseName: Biblioteka promptova ${{ env.VERZIJA }}
           releaseBody: ${{ steps.beleska.outputs.beleska }}
           releaseDraft: false
           prerelease: false
