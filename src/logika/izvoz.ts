@@ -2,6 +2,7 @@
 // Čitanje proverava SVAKO polje pre nego što se bilo šta upiše u bazu.
 import { formatDatumVreme } from "./format";
 import {
+  MAX_BROJ_OZNAKA,
   MAX_NASLOV,
   MAX_OZNAKA,
   MAX_TEKST,
@@ -128,6 +129,7 @@ function procitajUnos(v: unknown, i: number, idProjekata: Set<string>): Unos {
   );
   je(
     Array.isArray(v.oznake) &&
+      v.oznake.length <= MAX_BROJ_OZNAKA &&
       v.oznake.every((o) => typeof o === "string" && o.trim().length > 0 && o.length <= MAX_OZNAKA && !o.includes(",")),
     `${gde}: neispravne oznake.`,
   );

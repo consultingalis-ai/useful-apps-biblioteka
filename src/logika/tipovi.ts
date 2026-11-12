@@ -39,4 +39,5 @@ export interface SviPodaci {
 
 export const MAX_NASLOV = 200;
 export const MAX_TEKST = 100_000;
-export const MAX_OZNAKA = 50; // dužina jedne oznake
+export const MAX_OZNAKA = 40; // dužina jedne oznake
+export const MAX_BROJ_OZNAKA = 20; // najviše oznaka po unosu

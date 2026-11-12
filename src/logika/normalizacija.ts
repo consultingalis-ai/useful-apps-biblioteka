@@ -6,7 +6,7 @@ const ZAMENE: Record<string, string> = {
   ć: "c",
   š: "s",
   ž: "z",
-  đ: "dj",
+  đ: "d",
 };
 
 export function normalizuj(tekst: string): string {
@@ -16,7 +16,8 @@ export function normalizuj(tekst: string): string {
     rezultat += ZAMENE[znak] ?? znak;
   }
   // Ostale kvačice (npr. é, ü) uklanjamo standardnim Unicode rastavljanjem.
-  return rezultat.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  // „dj” pretvaramo u „d”, da bi „Đorđe”, „Djordje” i „Dordje” bili isto.
+  return rezultat.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/dj/g, "d");
 }
 
 /** Ključ za poređenje naziva (projekti, oznake): bez razlike u slovima i razmacima. */

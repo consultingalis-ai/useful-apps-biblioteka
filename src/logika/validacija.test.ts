@@ -25,6 +25,13 @@ describe("validirajUnos", () => {
   it("tekst od 50.000 znakova je ispravan", () => {
     expect(jeIspravno(validirajUnos({ ...ispravna, tekst: "č".repeat(50_000) }, projekti))).toBe(true);
   });
+  it("oznake: najviše 20, svaka do 40 znakova", () => {
+    const oznake = (n: number) => Array.from({ length: n }, (_, i) => `o${i}`);
+    expect(validirajUnos({ ...ispravna, oznake: oznake(20) }, projekti).oznake).toBeUndefined();
+    expect(validirajUnos({ ...ispravna, oznake: oznake(21) }, projekti).oznake).toBeDefined();
+    expect(validirajUnos({ ...ispravna, oznake: ["a".repeat(40)] }, projekti).oznake).toBeUndefined();
+    expect(validirajUnos({ ...ispravna, oznake: ["a".repeat(41)] }, projekti).oznake).toBeDefined();
+  });
   it("nepoznat tip i projekat", () => {
     expect(validirajUnos({ ...ispravna, tip: "x" }, projekti).tip).toBeDefined();
     expect(validirajUnos({ ...ispravna, projekatId: "nema" }, projekti).projekatId).toBeDefined();

@@ -1,4 +1,5 @@
 // Šablon za tip „nastavak” i pomoćne funkcije za editor.
+import { kljucNaziva } from "./normalizacija";
 
 export const SABLON_NASTAVAK = [
   "## Gde smo stali",
@@ -16,8 +17,9 @@ export const SABLON_NASTAVAK = [
 
 /** Naslov kopije pri dupliranju, skraćen tako da ne pređe dozvoljenu dužinu. */
 export function naslovKopije(naslov: string, max = 200): string {
-  const prefiks = "Kopija – ";
-  return (prefiks + naslov).slice(0, max);
+  const sufiks = " (kopija)";
+  // Ako je naslov predugačak, skraćujemo ga, a „(kopija)” uvek ostaje na kraju.
+  return naslov.slice(0, max - sufiks.length) + sufiks;
 }
 
 /** Prva 3 reda teksta za prikaz na kartici. */
@@ -31,7 +33,8 @@ export function parsirajOznake(unos: string): string[] {
   const vidjeno = new Set<string>();
   for (const deo of unos.split(",")) {
     const oznaka = deo.trim().replace(/\s+/g, " ");
-    const kljuc = oznaka.toLowerCase();
+    // „Šablon” i „sablon” su ista oznaka: poredimo bez kvačica i velikih slova.
+    const kljuc = kljucNaziva(oznaka);
     if (oznaka && !vidjeno.has(kljuc)) {
       vidjeno.add(kljuc);
       rezultat.push(oznaka);

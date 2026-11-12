@@ -1,6 +1,6 @@
 // Provera forme pre čuvanja. Vraća poruke na srpskom po polju; prazan objekat = sve je ispravno.
 import { kljucNaziva } from "./normalizacija";
-import { MAX_NASLOV, MAX_OZNAKA, MAX_TEKST, TIPOVI, type Projekat } from "./tipovi";
+import { MAX_BROJ_OZNAKA, MAX_NASLOV, MAX_OZNAKA, MAX_TEKST, TIPOVI, type Projekat } from "./tipovi";
 
 export interface FormaUnosa {
   naslov: string;
@@ -29,6 +29,7 @@ export function validirajUnos(forma: FormaUnosa, projekti: Projekat[]): Greske {
 
   const predugacka = forma.oznake.find((o) => o.length > MAX_OZNAKA);
   if (predugacka) g.oznake = `Oznaka može imati najviše ${MAX_OZNAKA} znakova.`;
+  else if (forma.oznake.length > MAX_BROJ_OZNAKA) g.oznake = `Unos može imati najviše ${MAX_BROJ_OZNAKA} oznaka.`;
 
   return g;
 }
