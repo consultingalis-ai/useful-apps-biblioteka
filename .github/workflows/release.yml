@@ -1,0 +1,77 @@
+# Release: na tag v* (npr. v0.1.0) gradi NSIS installer i kači ga na GitHub Release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # Ručno pokretanje (Actions → Release → Run workflow), jer guranje taga iz Claude sesije ne prolazi.
+  workflow_dispatch:
+    inputs:
+      verzija:
+        description: "Verzija za izdavanje, npr. v0.1.0"
+        required: true
+
+env:
+  VERZIJA: ${{ github.event.inputs.verzija || github.ref_name }}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Beleška o izmenama iz CHANGELOG.md
+        id: beleska
+        shell: pwsh
+        run: |
+          $verzija = "$env:VERZIJA".TrimStart("v")
+          $tekst = Get-Content CHANGELOG.md -Raw -Encoding utf8
+          $deo = [regex]::Match($tekst, "(?s)## \[$([regex]::Escape($verzija))\].*?(?=\n## \[|\z)").Value
+          if (-not $deo) { $deo = "Pogledaj CHANGELOG.md" }
+          $deo += "`n`nInstalacija: preuzmi .exe ispod. Ako Windows prikaže SmartScreen: More info → Run anyway."
+          "beleska<<KRAJ" >> $env:GITHUB_OUTPUT
+          $deo >> $env:GITHUB_OUTPUT
+          "KRAJ" >> $env:GITHUB_OUTPUT
+
+      # Ključ za potpis bez razmaka i praznih redova (lako se nalepe u GitHub secrets).
+      - name: Priprema ključa za potpis
+        shell: pwsh
+        env:
+          KLJUC: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          LOZINKA: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if (-not $env:KLJUC) { Write-Error "Nedostaje secret TAURI_SIGNING_PRIVATE_KEY"; exit 1 }
+          $k = $env:KLJUC.Trim(); $l = "$env:LOZINKA".Trim()
+          Write-Host "::add-mask::$k"
+          if ($l) { Write-Host "::add-mask::$l" }
+          "TAURI_SIGNING_PRIVATE_KEY=$k" >> $env:GITHUB_ENV
+          "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=$l" >> $env:GITHUB_ENV
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ env.VERZIJA }}
+          releaseName: Biblioteka promptova ${{ env.VERZIJA }}
+          releaseBody: ${{ steps.beleska.outputs.beleska }}
+          releaseDraft: false
+          prerelease: false
+          # latest.json na Release-u: odavde aplikacija saznaje da postoji nova verzija.
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: true

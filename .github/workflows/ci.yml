@@ -1,0 +1,72 @@
+# Provera na svaki PR: tipovi → lint → Vitest → cargo test → pun build sa installerom.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provera:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Instalacija paketa
+        run: npm ci
+
+      - name: Provera tipova
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Vitest
+        run: npm test
+
+      - name: Cargo test
+        working-directory: src-tauri
+        run: cargo test
+
+      # Ključ za potpis ažuriranja je GitHub secret. Ako ga nema (npr. PR iz forka),
+      # installer se ipak gradi, samo bez fajlova za automatsko ažuriranje.
+      - name: Tauri build (NSIS installer)
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          # Uklanja razmake i prazne redove koji se lako nalepe uz ključ u GitHub secrets.
+          if ($env:TAURI_SIGNING_PRIVATE_KEY) { $env:TAURI_SIGNING_PRIVATE_KEY = $env:TAURI_SIGNING_PRIVATE_KEY.Trim() }
+          if ($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) { $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD.Trim() }
+          if ($env:TAURI_SIGNING_PRIVATE_KEY) {
+            npx tauri build
+          } else {
+            Write-Host "Nema ključa za potpis: gradim bez fajlova za ažuriranje."
+            '{"bundle":{"createUpdaterArtifacts":false}}' | Out-File -Encoding utf8NoBOM bez-azuriranja.json
+            npx tauri build --config bez-azuriranja.json
+          }
+
+      - name: Installer kao artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-${{ github.sha }}
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
