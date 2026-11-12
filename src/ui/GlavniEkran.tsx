@@ -200,7 +200,7 @@ export function GlavniEkran({ unosi, projekti, filter, onFilter, onNovi, onIzmen
             })}
           </div>
         )}
-        <p className="pomoc">↑ ↓ biraju karticu · Enter kopira · dvoklik otvara izmenu</p>
+        {prikaz.length > 0 && <p className="pomoc">↑ ↓ biraju karticu · Enter kopira · dvoklik otvara izmenu</p>}
       </section>
     </div>
   );

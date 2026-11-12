@@ -136,6 +136,6 @@ input, select, textarea {
 .modal h2 { margin: 0 0 8px; font-size: 17px; }
 .modal p { margin: 0 0 18px; color: #3c4550; }
 .obavestenje {
-  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 44px; left: 50%; transform: translateX(-50%);
   background: #1d232b; color: #fff; padding: 8px 16px; border-radius: 8px; z-index: 20;
 }
